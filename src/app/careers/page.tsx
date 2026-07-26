@@ -89,9 +89,9 @@ export default function CareersPage() {
             transition={{ duration: 1 }}
             className="space-y-4"
           >
-            <span className="text-gold uppercase tracking-[0.3em] text-[10px] font-bold block">
+            {/* <span className="text-gold uppercase tracking-[0.3em] text-[10px] font-bold block">
               Join Our Team
-            </span>
+            </span> */}
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif text-ivory leading-tight">
               Shape the Future of <br />
               <span className="italic text-gold">Luxury Real Estate</span>

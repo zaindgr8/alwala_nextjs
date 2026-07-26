@@ -52,9 +52,9 @@ export default function AboutPage() {
             transition={{ duration: 1 }}
             className="space-y-4"
           >
-            <span className="text-gold uppercase tracking-[0.3em] text-[10px] font-bold block">
+            {/* <span className="text-gold uppercase tracking-[0.3em] text-[10px] font-bold block">
               Our Legacy
-            </span>
+            </span> */}
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif text-ivory leading-tight">
               Setting the Standard in <br />
               <span className="italic text-gold">Oman Real Estate</span>
