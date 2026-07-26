@@ -70,13 +70,13 @@ export default function HeroPopup({ isOpen, onClose }: HeroPopupProps) {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-ivory z-[101] overflow-hidden shadow-2xl"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-lg bg-ivory z-[101] shadow-2xl max-h-[90dvh] flex flex-col overflow-hidden"
           >
-            <div className="relative p-8 md:p-12">
+            <div className="relative p-5 sm:p-8 overflow-y-auto flex-1">
               {/* Header */}
-              <div className="flex justify-between items-start mb-8">
+              <div className="flex justify-between items-start mb-5">
                 <div className="space-y-2 max-w-[80%]">
-                  <h3 className="text-3xl md:text-4xl font-serif text-matte-black leading-tight">
+                  <h3 className="text-2xl sm:text-3xl font-serif text-matte-black leading-tight">
                     Own Property in Oman. <br />
                     <span className="italic">Get Lifetime Residency.</span>
                   </h3>
@@ -156,7 +156,7 @@ export default function HeroPopup({ isOpen, onClose }: HeroPopupProps) {
                       <label className="text-[10px] uppercase tracking-widest text-matte-black/40 font-bold">Query</label>
                       <textarea
                         required
-                        rows={3}
+                        rows={2}
                         placeholder="Enter your query here..."
                         className="w-full bg-transparent border-b border-champagne p-3 text-sm outline-none focus:border-gold transition-all text-matte-black resize-none"
                         value={formData.query}

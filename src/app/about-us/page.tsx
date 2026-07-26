@@ -309,7 +309,7 @@ export default function AboutPage() {
                 src="/images/event-1.jpg"
                 alt="FFC Trophy Presentation Ceremony"
                 fill
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
+                className="object-cover object-top transition-transform duration-700 group-hover:scale-105"
                 sizes="(max-width: 768px) 100vw, 33vw"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-matte-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400" />
@@ -385,7 +385,7 @@ export default function AboutPage() {
           </div>
 
           {/* Secondary strip — 3 remaining photos horizontal */}
-          <div className="grid grid-cols-3 gap-3 mt-3 h-44">
+          <div className="grid grid-cols-3 gap-3 mt-3 h-56">
             {[
               { src: "/images/event-3.jpg", label: "Championship Night – Outdoor Arena" },
               { src: "/images/event-6.jpg", label: "FFC Ring Ceremony" },
@@ -403,7 +403,7 @@ export default function AboutPage() {
                   src={ev.src}
                   alt={ev.label}
                   fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="object-cover object-top transition-transform duration-700 group-hover:scale-105"
                   sizes="33vw"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-matte-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400" />
