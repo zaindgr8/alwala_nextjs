@@ -12,10 +12,16 @@ export default function FeaturedProperties() {
   useEffect(() => {
     async function fetchFeatured() {
       try {
-        const res = await fetch('/api/properties?featured=true');
+        // Pull the full list (already newest-first) and float featured ones to
+        // the top, so the grid always fills to 3 even when few are flagged.
+        const res = await fetch('/api/properties');
         if (!res.ok) throw new Error('Failed to fetch');
         const data = await res.json();
-        setProperties(Array.isArray(data) ? data : []);
+        const list = Array.isArray(data) ? data : [];
+        const sorted = [...list].sort(
+          (a, b) => Number(b.featured) - Number(a.featured)
+        );
+        setProperties(sorted);
       } catch (e) {
         console.error('Failed to fetch featured properties', e);
       } finally {
