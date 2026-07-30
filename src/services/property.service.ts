@@ -2,10 +2,15 @@ import { PropertyType, PropertyStatus } from "@/types/db";
 import { supabaseRead } from "@/lib/supabase-read";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
-// Pulls every property column plus the related community/agent/metrics, matching
-// the shape the Prisma `include` used to return so the UI mapping is unchanged.
+// Admin select (service-role, bypasses RLS): full row + community/agent/metrics,
+// matching the shape the Prisma `include` used to return.
 const PROPERTY_SELECT =
   "*,community:communities(*),agent:agents(*),metrics:investment_metrics(*)";
+
+// Public select (anon key): omit the `agents` embed so the public listing does
+// not depend on anon read access to agent PII — agent data is unused publicly.
+const PUBLIC_PROPERTY_SELECT =
+  "*,community:communities(*),metrics:investment_metrics(*)";
 
 export interface PropertyFilters {
   type?: PropertyType;
@@ -26,8 +31,8 @@ export const propertyService = {
 
     // `!inner` is only needed when we filter on the embedded community.
     const select = communitySlug
-      ? PROPERTY_SELECT.replace("communities(*)", "communities!inner(*)")
-      : PROPERTY_SELECT;
+      ? PUBLIC_PROPERTY_SELECT.replace("communities(*)", "communities!inner(*)")
+      : PUBLIC_PROPERTY_SELECT;
 
     let query = supabaseRead
       .from("properties")

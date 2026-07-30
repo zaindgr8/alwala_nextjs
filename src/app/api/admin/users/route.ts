@@ -16,9 +16,12 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden: Super Admin only' }, { status: 403 });
     }
 
+    // Never expose passwordHash — select explicit columns only.
     const { data, error } = await supabaseAdmin
       .from('users')
-      .select('*, agent:agents(*, properties(count))')
+      .select(
+        'id, email, role, status, isActive, createdAt, updatedAt, agent:agents(*, properties(count))'
+      )
       .order('createdAt', { ascending: false });
     if (error) throw error;
 
