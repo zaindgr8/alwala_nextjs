@@ -9,7 +9,6 @@ import {
   Home,
   Users,
   Building2,
-  Settings,
   LogOut,
   ChevronRight,
   ChevronLeft,
@@ -23,7 +22,6 @@ const navItems = [
   { label: 'Communities', href: '/admin/communities', icon: Building2 },
   { label: 'Users', href: '/admin/users', icon: UserCog },
   { label: 'Leads', href: '/admin/leads', icon: Users },
-  { label: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

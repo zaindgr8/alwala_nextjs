@@ -1,4 +1,4 @@
-import { Property as PrismaProperty, Community, Agent, InvestmentMetric, User } from '@prisma/client';
+import { Property as PrismaProperty, Community, Agent, InvestmentMetric, User } from '@/types/db';
 
 export type PropertyType = string;
 export type PropertyStatus = string;

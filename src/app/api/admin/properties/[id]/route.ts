@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { propertyService } from '@/services/property.service';
 import { z } from 'zod';
-import { PropertyType, PropertyStatus } from '@prisma/client';
+import { PropertyType, PropertyStatus } from '@/types/db';
 
 // Treat empty string / null / undefined as null so nullable numeric fields
 // don't get coerced to 0.

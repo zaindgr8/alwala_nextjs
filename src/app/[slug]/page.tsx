@@ -2,8 +2,8 @@ import { notFound } from "next/navigation";
 
 export const dynamic = 'force-dynamic';
 
-import { prisma } from "@/lib/prisma";
-import { Property } from "@prisma/client";
+import { supabaseRead } from "@/lib/supabase-read";
+import { Property } from "@/types/db";
 import { COMMUNITIES_DATA } from "@/data/communities";
 import CommunityHero from "@/components/community/CommunityHero";
 import CommunityOverview from "@/components/community/CommunityOverview";
@@ -46,16 +46,14 @@ export default async function CommunityPage({ params }: { params: Promise<{ slug
 
   let properties: Property[] = [];
   try {
-    properties = await prisma.property.findMany({
-      where: {
-        community: {
-          slug: normalizedSlug,
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+    // Inner-join on community so we only get properties whose community slug matches.
+    const { data, error } = await supabaseRead
+      .from("properties")
+      .select("*,community:communities!inner(slug)")
+      .eq("community.slug", normalizedSlug)
+      .order("createdAt", { ascending: false });
+    if (error) throw error;
+    properties = (data ?? []) as unknown as Property[];
   } catch (error) {
     console.error("Error fetching properties:", error);
   }

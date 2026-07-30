@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { decrypt } from '@/lib/auth';
 import { cookies } from 'next/headers';
 import { generateSlug } from '@/lib/slugs';
 import { randomUUID } from 'crypto';
-import { Prisma } from '@prisma/client';
 
 export async function GET() {
   try {
@@ -17,17 +16,24 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden: Super Admin only' }, { status: 403 });
     }
 
-    const users = await prisma.user.findMany({
-      include: {
-        agent: {
-          include: {
-            _count: {
-              select: { properties: true }
-            }
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
+    const { data, error } = await supabaseAdmin
+      .from('users')
+      .select('*, agent:agents(*, properties(count))')
+      .order('createdAt', { ascending: false });
+    if (error) throw error;
+
+    // Reshape Supabase's `agent.properties: [{ count }]` into the Prisma-style
+    // `agent._count.properties` the admin UI expects.
+    const users = (data ?? []).map((u: Record<string, unknown>) => {
+      const agent = u.agent as Record<string, unknown> | null;
+      if (agent) {
+        const propsCount = Array.isArray(agent.properties)
+          ? ((agent.properties[0] as { count?: number })?.count ?? 0)
+          : 0;
+        const { properties: _p, ...agentRest } = agent;
+        u.agent = { ...agentRest, _count: { properties: propsCount } };
+      }
+      return u;
     });
 
     return NextResponse.json(users);
@@ -63,42 +69,52 @@ export async function POST(request: Request) {
     const agentId = randomUUID();
     const slug = `${generateSlug(fullName)}-${agentId.slice(0, 8)}`;
 
-    const result = await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          email,
-          passwordHash,
-          role: role || 'AGENT',
-          status: status || 'PENDING',
-          isActive: true,
-        },
-      });
+    // Supabase-js has no client-side transaction, so insert the user first,
+    // then the agent, and roll the user back if the agent insert fails.
+    const { data: user, error: userError } = await supabaseAdmin
+      .from('users')
+      .insert({
+        email,
+        passwordHash,
+        role: role || 'AGENT',
+        status: status || 'PENDING',
+        isActive: true,
+        // `updatedAt` is NOT NULL with no DB default (Prisma used to set it via
+        // @updatedAt), so we must provide it explicitly.
+        updatedAt: new Date().toISOString(),
+      })
+      .select('*')
+      .single();
+    if (userError) throw userError;
 
-      const agent = await tx.agent.create({
-        data: {
-          id: agentId,
-          slug,
-          userId: user.id,
-          fullName,
-          phone: phone || '',
-          bio,
-          isActive: true,
-        },
-      });
+    const { data: agent, error: agentError } = await supabaseAdmin
+      .from('agents')
+      .insert({
+        id: agentId,
+        slug,
+        userId: user.id,
+        fullName,
+        phone: phone || '',
+        bio,
+        isActive: true,
+      })
+      .select('*')
+      .single();
 
-      return { user, agent };
-    });
+    if (agentError) {
+      // Compensating rollback — remove the orphaned user.
+      await supabaseAdmin.from('users').delete().eq('id', user.id);
+      throw agentError;
+    }
 
-    return NextResponse.json(result);
+    return NextResponse.json({ user, agent });
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === 'P2002') {
-        const target = (error.meta?.target as string[])?.join(', ') ?? 'field';
-        return NextResponse.json(
-          { error: `A user with this ${target.includes('email') ? 'email' : target} already exists` },
-          { status: 400 }
-        );
-      }
+    // Postgres unique-violation (duplicate email)
+    if ((error as { code?: string })?.code === '23505') {
+      return NextResponse.json(
+        { error: 'A user with this email already exists' },
+        { status: 400 }
+      );
     }
     console.error('[CREATE_USER]', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

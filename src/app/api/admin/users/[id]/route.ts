@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { decrypt } from '@/lib/auth';
 import { cookies } from 'next/headers';
 
@@ -20,13 +20,20 @@ export async function PATCH(
 
     const { status, isActive } = await request.json();
 
-    const updatedUser = await prisma.user.update({
-      where: { id },
-      data: {
-        status: status !== undefined ? status : undefined,
-        isActive: isActive !== undefined ? isActive : undefined,
-      },
-    });
+    // `updatedAt` is NOT NULL with no DB default — always bump it on update.
+    const updateData: Record<string, unknown> = {
+      updatedAt: new Date().toISOString(),
+    };
+    if (status !== undefined) updateData.status = status;
+    if (isActive !== undefined) updateData.isActive = isActive;
+
+    const { data: updatedUser, error } = await supabaseAdmin
+      .from('users')
+      .update(updateData)
+      .eq('id', id)
+      .select('*')
+      .single();
+    if (error) throw error;
 
     return NextResponse.json(updatedUser);
   } catch (error) {

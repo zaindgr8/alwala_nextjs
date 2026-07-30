@@ -1,6 +1,6 @@
 import {
   PropertyType
-} from "@prisma/client";
+} from "@/types/db";
 
 export interface CommunityMetadata {
   hero: {

@@ -1,14 +1,6 @@
-import { prisma } from "@/lib/prisma";
-import { Prisma, Property, PropertyType, PropertyStatus } from "@prisma/client";
-import { createClient } from "@supabase/supabase-js";
-
-// Read-only Supabase client for public property reads (respects RLS via the
-// publishable key). No session persistence — this runs server-side per request.
-const supabaseRead = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-  { auth: { persistSession: false } }
-);
+import { PropertyType, PropertyStatus } from "@/types/db";
+import { supabaseRead } from "@/lib/supabase-read";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 // Pulls every property column plus the related community/agent/metrics, matching
 // the shape the Prisma `include` used to return so the UI mapping is unchanged.
@@ -58,51 +50,45 @@ export const propertyService = {
     return data ?? [];
   },
 
+  // Admin paginated listing (bypasses RLS via the service-role client).
   async getPaginated(filters: PropertyFilters = {}, page = 1, pageSize = 20) {
     const { type, status, communityId, communitySlug, featured, minPrice, maxPrice, search } = filters;
-
-    const where: Prisma.PropertyWhereInput = {
-      ...(type && { type }),
-      ...(status && { status }),
-      ...(communityId && { communityId }),
-      ...(communitySlug && { community: { slug: communitySlug } }),
-      ...(featured !== undefined && { featured }),
-      ...(minPrice || maxPrice) && {
-        price: {
-          ...(minPrice && { gte: minPrice }),
-          ...(maxPrice && { lte: maxPrice }),
-        },
-      },
-      ...(search && {
-        OR: [
-          { title: { contains: search, mode: 'insensitive' } },
-          { slug: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } },
-        ],
-      }),
-    };
 
     // Clamp inputs so a bad query param can't request a huge page or a negative skip.
     const safePage = Math.max(1, Math.floor(page) || 1);
     const safePageSize = Math.min(100, Math.max(1, Math.floor(pageSize) || 20));
+    const from = (safePage - 1) * safePageSize;
+    const to = from + safePageSize - 1;
 
-    const [data, total] = await prisma.$transaction([
-      prisma.property.findMany({
-        where,
-        include: {
-          community: true,
-          agent: true,
-          metrics: true,
-        },
-        orderBy: { createdAt: 'desc' },
-        skip: (safePage - 1) * safePageSize,
-        take: safePageSize,
-      }),
-      prisma.property.count({ where }),
-    ]);
+    const select = communitySlug
+      ? PROPERTY_SELECT.replace("communities(*)", "communities!inner(*)")
+      : PROPERTY_SELECT;
 
+    let query = supabaseAdmin
+      .from("properties")
+      .select(select, { count: "exact" })
+      .order("createdAt", { ascending: false })
+      .range(from, to);
+
+    if (type) query = query.eq("type", type);
+    if (status) query = query.eq("status", status);
+    if (communityId) query = query.eq("communityId", communityId);
+    if (communitySlug) query = query.eq("community.slug", communitySlug);
+    if (featured !== undefined) query = query.eq("featured", featured);
+    if (minPrice) query = query.gte("price", minPrice);
+    if (maxPrice) query = query.lte("price", maxPrice);
+    if (search) {
+      query = query.or(
+        `title.ilike.%${search}%,slug.ilike.%${search}%,description.ilike.%${search}%`
+      );
+    }
+
+    const { data, count, error } = await query;
+    if (error) throw error;
+
+    const total = count ?? 0;
     return {
-      data,
+      data: data ?? [],
       total,
       page: safePage,
       pageSize: safePageSize,
@@ -111,49 +97,64 @@ export const propertyService = {
   },
 
   async getById(id: string) {
-    return await prisma.property.findUnique({
-      where: { id },
-      include: {
-        community: true,
-        agent: true,
-        metrics: true,
-      },
-    });
+    const { data, error } = await supabaseAdmin
+      .from("properties")
+      .select(PROPERTY_SELECT)
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
   },
 
-  async create(data: Prisma.PropertyUncheckedCreateInput) {
-    return await prisma.property.create({
-      data,
-    });
+  async create(data: Record<string, unknown>) {
+    const { data: row, error } = await supabaseAdmin
+      .from("properties")
+      .insert(data)
+      .select(PROPERTY_SELECT)
+      .single();
+    if (error) throw error;
+    return row;
   },
 
-  async update(id: string, data: Prisma.PropertyUpdateInput) {
-    return await prisma.property.update({
-      where: { id },
-      data,
-    });
+  async update(id: string, data: Record<string, unknown>) {
+    const { data: row, error } = await supabaseAdmin
+      .from("properties")
+      // Bump updatedAt on every edit (Prisma used to do this via @updatedAt).
+      .update({ ...data, updatedAt: new Date().toISOString() })
+      .eq("id", id)
+      .select(PROPERTY_SELECT)
+      .single();
+    if (error) throw error;
+    return row;
   },
 
   async delete(id: string) {
-    return await prisma.property.delete({
-      where: { id },
-    });
+    const { error } = await supabaseAdmin
+      .from("properties")
+      .delete()
+      .eq("id", id);
+    if (error) throw error;
+    return { id };
   },
 
   async duplicate(id: string) {
     const original = await this.getById(id);
     if (!original) throw new Error("Property not found");
 
-    const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, community: _community, agent: _agent, metrics: _metrics, coordinates, ...rest } = original;
+    // Strip identity/timestamp/relational fields; keep the raw column values.
+    const {
+      id: _id,
+      createdAt: _createdAt,
+      updatedAt: _updatedAt,
+      community: _community,
+      agent: _agent,
+      metrics: _metrics,
+      ...rest
+    } = original as Record<string, unknown>;
 
-    return await prisma.property.create({
-      data: {
-        ...rest,
-        coordinates: coordinates as any,
-        slug: `${rest.slug}-copy-${Date.now()}`,
-        communityId: original.communityId,
-        agentId: original.agentId,
-      },
+    return await this.create({
+      ...rest,
+      slug: `${(rest as { slug?: string }).slug}-copy-${Date.now()}`,
     });
   },
 };

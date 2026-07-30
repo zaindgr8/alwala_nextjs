@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { decrypt } from '@/lib/auth';
 import { cookies } from 'next/headers';
 
@@ -14,16 +14,17 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const [userCount, propertyCount, communityCount] = await Promise.all([
-      prisma.user.count(),
-      prisma.property.count(),
-      prisma.community.count(),
+    // head+count returns only the row count, no rows.
+    const [users, properties, communities] = await Promise.all([
+      supabaseAdmin.from('users').select('*', { count: 'exact', head: true }),
+      supabaseAdmin.from('properties').select('*', { count: 'exact', head: true }),
+      supabaseAdmin.from('communities').select('*', { count: 'exact', head: true }),
     ]);
 
     return NextResponse.json({
-      agents: userCount,
-      properties: propertyCount,
-      communities: communityCount,
+      agents: users.count ?? 0,
+      properties: properties.count ?? 0,
+      communities: communities.count ?? 0,
       health: '99.9%', // Static for now as we don't have a real health check
     });
   } catch (error) {

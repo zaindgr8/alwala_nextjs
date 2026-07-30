@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { propertyService } from '@/services/property.service';
 import { z } from 'zod';
-import { Prisma, PropertyType, PropertyStatus } from '@prisma/client';
-import { prisma } from '@/lib/prisma';
+import { PropertyType, PropertyStatus } from '@/types/db';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { generateSlug } from '@/lib/slugs';
 import { cookies } from 'next/headers';
 import { decrypt } from '@/lib/auth';
@@ -45,18 +45,22 @@ export async function POST(request: Request) {
     const validatedData = propertySchema.parse(body);
 
     // 2. Resolve Community Slug to ID
-    const community = await prisma.community.findUnique({
-      where: { slug: validatedData.communityId }
-    });
+    const { data: community } = await supabaseAdmin
+      .from('communities')
+      .select('id')
+      .eq('slug', validatedData.communityId)
+      .maybeSingle();
     if (!community) {
       return NextResponse.json({ error: 'Invalid community slug' }, { status: 400 });
     }
 
     // 3. The property is always assigned to the agent profile of the
     // logged-in user, so agents/admins never pick from a list.
-    const agent = await prisma.agent.findUnique({
-      where: { userId }
-    });
+    const { data: agent } = await supabaseAdmin
+      .from('agents')
+      .select('id')
+      .eq('userId', userId)
+      .maybeSingle();
     if (!agent) {
       return NextResponse.json(
         { error: 'Your account has no agent profile, so it cannot own listings.' },
@@ -83,12 +87,11 @@ export async function POST(request: Request) {
         details: error.issues.map(i => `${i.path.join('.')}: ${i.message}`)
       }, { status: 400 });
     }
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === 'P2002') {
-        return NextResponse.json({
-          error: 'A property with this slug already exists',
-        }, { status: 400 });
-      }
+    // Postgres unique-violation (e.g. duplicate slug)
+    if ((error as { code?: string })?.code === '23505') {
+      return NextResponse.json({
+        error: 'A property with this slug already exists',
+      }, { status: 400 });
     }
     console.error('[ADMIN_PROPERTIES_POST]', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

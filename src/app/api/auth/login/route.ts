@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { encrypt } from '@/lib/auth';
 import { cookies } from 'next/headers';
-import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { verifyPassword } from '@/lib/password';
 
 export async function POST(request: Request) {
@@ -11,12 +11,15 @@ export async function POST(request: Request) {
     const email = username;
 
     const dbStart = Date.now();
-    const user = await prisma.user.findUnique({
-      where: { email }
-    });
+    const { data: user, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('id, email, passwordHash, role, status, isActive')
+      .eq('email', email)
+      .maybeSingle();
     const dbEnd = Date.now();
     console.log(`[AUTH_LOGIN] DB Fetch: ${dbEnd - dbStart}ms`);
 
+    if (userError) throw userError;
     if (!user) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }

@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function GET() {
   const start = Date.now();
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    // Lightweight round-trip to confirm the DB is reachable.
+    const { error } = await supabaseAdmin
+      .from('communities')
+      .select('id', { count: 'exact', head: true });
+    if (error) throw error;
     const duration = Date.now() - start;
     return NextResponse.json({
       status: 'ok',

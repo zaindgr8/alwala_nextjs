@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { cookies } from 'next/headers';
 import { decrypt } from '@/lib/auth';
 
@@ -23,11 +23,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'UserId required' }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { isActive: true, role: true }
-    });
+    const { data: user, error } = await supabaseAdmin
+      .from('users')
+      .select('isActive, role')
+      .eq('id', userId)
+      .maybeSingle();
 
+    if (error) throw error;
     if (!user || !user.isActive) {
       return NextResponse.json({ active: false }, { status: 403 });
     }

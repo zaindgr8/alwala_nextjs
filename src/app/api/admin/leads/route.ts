@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { leadService } from '@/services/lead.service';
+import { pushLeadToLeadrat } from '@/services/leadrat.service';
 import { z } from 'zod';
 
 const leadSchema = z.object({
@@ -16,6 +17,17 @@ export async function POST(request: Request) {
     const body = await request.json();
     const validatedData = leadSchema.parse(body);
     const lead = await leadService.create(validatedData);
+
+    // Forward to Leadrat CRM (PUSH). Non-fatal: pushLeadToLeadrat swallows its
+    // own errors so a CRM outage never fails the customer's submission.
+    await pushLeadToLeadrat({
+      name: validatedData.name,
+      email: validatedData.email,
+      phone: validatedData.phone,
+      message: validatedData.message,
+      propertyId: validatedData.propertyId,
+    });
+
     return NextResponse.json(lead);
   } catch (error) {
     if (error instanceof z.ZodError) {

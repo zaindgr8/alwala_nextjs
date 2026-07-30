@@ -1,41 +1,62 @@
-import { prisma } from "@/lib/prisma";
-import { Prisma, Community } from "@prisma/client";
+import { supabaseRead } from "@/lib/supabase-read";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export const communityService = {
+  // List all communities with a property count, ordered by name.
   async getAll() {
-    return await prisma.community.findMany({
-      include: {
-        _count: {
-          select: { properties: true },
-        },
-      },
-      orderBy: { name: 'asc' },
+    const { data, error } = await supabaseRead
+      .from("communities")
+      .select("*,properties(count)")
+      .order("name", { ascending: true });
+    if (error) throw error;
+
+    // Flatten Supabase's `properties: [{ count }]` into Prisma-style `_count`.
+    return (data ?? []).map((c: Record<string, unknown>) => {
+      const propsCount = Array.isArray(c.properties)
+        ? ((c.properties[0] as { count?: number })?.count ?? 0)
+        : 0;
+      const { properties: _p, ...rest } = c;
+      return { ...rest, _count: { properties: propsCount } };
     });
   },
 
   async getById(id: string) {
-    return await prisma.community.findUnique({
-      where: { id },
-      include: { properties: true },
-    });
+    const { data, error } = await supabaseAdmin
+      .from("communities")
+      .select("*,properties(*)")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
   },
 
-  async create(data: Prisma.CommunityUncheckedCreateInput) {
-    return await prisma.community.create({
-      data,
-    });
+  async create(data: Record<string, unknown>) {
+    const { data: row, error } = await supabaseAdmin
+      .from("communities")
+      .insert(data)
+      .select("*")
+      .single();
+    if (error) throw error;
+    return row;
   },
 
-  async update(id: string, data: Prisma.CommunityUpdateInput) {
-    return await prisma.community.update({
-      where: { id },
-      data,
-    });
+  async update(id: string, data: Record<string, unknown>) {
+    const { data: row, error } = await supabaseAdmin
+      .from("communities")
+      .update(data)
+      .eq("id", id)
+      .select("*")
+      .single();
+    if (error) throw error;
+    return row;
   },
 
   async delete(id: string) {
-    return await prisma.community.delete({
-      where: { id },
-    });
+    const { error } = await supabaseAdmin
+      .from("communities")
+      .delete()
+      .eq("id", id);
+    if (error) throw error;
+    return { id };
   },
 };

@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { leadService } from '@/services/lead.service';
+import { LeadStatus } from '@/types/db';
 import { z } from 'zod';
 
 const leadUpdateSchema = z.object({
-  status: z.enum(['NEW', 'CONTACTED', 'QUALIFIED', 'ARCHIVED']),
+  status: z.nativeEnum(LeadStatus),
 }).partial();
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
