@@ -33,7 +33,7 @@ export default function MadinatAlIrfanPage() {
         tagline="THE NEW HEART OF MUSCAT • ARCHITECTURAL BRILLIANCE"
         description="A visionary urban development that redefines the city center. Combining state-of-the-art infrastructure with an uncompromising commitment to luxury and elegance."
         image="/communities/Madinat Al Irfan/1 (1).jpg"
-        primaryCta={{ text: "Explore Urban Portfolio", href: "/properties?communities=Madinat%20Al%20Irfan" }}
+        primaryCta={{ text: "Explore Urban Portfolio", href: "/property-search?communities=Madinat%20Al%20Irfan" }}
         secondaryCta={{ text: "View Masterplan", href: "#contact" }}
       />
 

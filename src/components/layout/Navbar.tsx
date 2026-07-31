@@ -12,10 +12,10 @@ const navLinks = [
   { name: "Home", href: "/" },
   {
     name: "Properties",
-    href: "/properties",
+    href: "/property-search",
     children: [
-      { name: "Off-Plan", href: "/properties?status=OFF_PLAN" },
-      { name: "Ready-To-Move", href: "/properties?status=READY_TO_MOVE" },
+      { name: "Off-Plan", href: "/property-search?status=OFF_PLAN" },
+      { name: "Ready-To-Move", href: "/property-search?status=READY_TO_MOVE" },
     ]
   },
   { name: "Blogs", href: "/blog" },

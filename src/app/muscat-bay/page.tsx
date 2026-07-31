@@ -33,7 +33,7 @@ export default function MuscatBayPage() {
         tagline="SOPHISTICATED SERENITY • PEAKS & WATERS"
         description="Beachfront villas and sea-view apartments nestled between the Al Hajar Mountains and the Arabian Sea. Oman's most coveted coastal address."
         image="/communities/Muscat Bay/image.png"
-        primaryCta={{ text: "View Exclusive Villas", href: "/properties?communities=Muscat%20Bay" }}
+        primaryCta={{ text: "View Exclusive Villas", href: "/property-search?communities=Muscat%20Bay" }}
         secondaryCta={{ text: "Request Private Guide", href: "#contact" }}
       />
 

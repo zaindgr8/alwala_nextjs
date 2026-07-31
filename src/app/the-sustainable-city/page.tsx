@@ -33,7 +33,7 @@ export default function SustainableCityPage() {
         tagline="ECO-INNOVATION • ZERO-CARBON LUXURY"
         description=" Live smarter at The Sustainable City Oman, where eco-friendly villas, smart homes and premium apartments create a healthier, sustainable lifestyle. Whether you are looking to buy property in Sustainable City in Oman or secure a future-ready investment in Oman, this green community offers freehold ownership, world-class amenities and lasting value."
         image="/p2.jpg"
-        primaryCta={{ text: "Explore Green Estates", href: "/properties?communities=Sustainable%20City" }}
+        primaryCta={{ text: "Explore Green Estates", href: "/property-search?communities=Sustainable%20City" }}
         secondaryCta={{ text: "Sustainability Report", href: "#contact" }}
       />
 

@@ -1,13 +1,15 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
+import PropertyInquiryModal from '@/components/properties/PropertyInquiryModal';
 
 export default function FeaturedProperties() {
   const [properties, setProperties] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedProperty, setSelectedProperty] = useState<any>(null);
 
   useEffect(() => {
     async function fetchFeatured() {
@@ -45,7 +47,7 @@ export default function FeaturedProperties() {
             </h2>
           </div>
           <Link
-            href="/properties"
+            href="/property-search"
             className="text-[11px] uppercase tracking-widest text-matte-black hover:text-gold transition-all duration-300 group flex items-center gap-2"
           >
             <span>Explore All Listings</span>
@@ -74,9 +76,9 @@ export default function FeaturedProperties() {
                 className="group flex flex-col"
               >
                 {/* Compact Image Card */}
-                <Link
-                  href={`/properties/${prop.slug}`}
-                  className="relative aspect-[3/2] w-full overflow-hidden rounded-2xl bg-zinc-100 mb-4 block"
+                <div
+                  onClick={() => setSelectedProperty(prop)}
+                  className="relative aspect-[3/2] w-full overflow-hidden rounded-2xl bg-zinc-100 mb-4 block cursor-pointer"
                 >
                   <Image
                     src={prop.gallery?.[0] || '/placeholder.jpg'}
@@ -87,7 +89,8 @@ export default function FeaturedProperties() {
                   <div className="absolute top-4 left-4 bg-matte-black/70 backdrop-blur-sm text-ivory text-[9px] uppercase tracking-widest font-semibold px-3 py-1 rounded-full">
                     {prop.status?.replace(/_/g, ' ')}
                   </div>
-                </Link>
+                </div
+                >
 
                 {/* Details Container below the Image */}
                 <div className="flex flex-col flex-1 px-1">
@@ -96,11 +99,11 @@ export default function FeaturedProperties() {
                       <p className="text-gold text-[9px] uppercase tracking-widest font-semibold">
                         {prop.community?.name || prop.location}
                       </p>
-                      <Link href={`/properties/${prop.slug}`}>
+                      <div onClick={() => setSelectedProperty(prop)} className="cursor-pointer">
                         <h3 className="text-lg font-serif text-matte-black mt-1 group-hover:text-gold transition-colors duration-300">
                           {prop.title}
                         </h3>
-                      </Link>
+                      </div>
                     </div>
                   </div>
 
@@ -126,12 +129,12 @@ export default function FeaturedProperties() {
                         maximumFractionDigits: 0
                       }).format(Number(prop.price))}
                     </p>
-                    <Link
-                      href={`/properties/${prop.slug}`}
+                    <button
+                      onClick={() => setSelectedProperty(prop)}
                       className="text-[10px] uppercase tracking-widest text-matte-black hover:text-gold transition-all font-semibold"
                     >
                       View Details &rarr;
-                    </Link>
+                    </button>
                   </div>
                 </div>
               </motion.div>
@@ -139,6 +142,11 @@ export default function FeaturedProperties() {
           )}
         </div>
       </div>
+      <PropertyInquiryModal
+        property={selectedProperty}
+        isOpen={!!selectedProperty}
+        onClose={() => setSelectedProperty(null)}
+      />
     </section>
   );
 }

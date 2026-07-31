@@ -33,7 +33,7 @@ export default function SultanHaithamCityPage() {
         tagline="VISIONARY URBANISM • THE FUTURE OF OMAN"
         description=" A new benchmark for modern living, Sultan Haitham City offers premium villas and apartments for sale in one of Oman’s leading smart communities and provides excellent investment opportunities."
         image="/communities/Sultan Haithem City/1.jpg"
-        primaryCta={{ text: "Explore the Masterplan", href: "/properties?communities=Sultan%20Haitham%20City" }}
+        primaryCta={{ text: "Explore the Masterplan", href: "/property-search?communities=Sultan%20Haitham%20City" }}
         secondaryCta={{ text: "Investment Guide", href: "#contact" }}
       />
 

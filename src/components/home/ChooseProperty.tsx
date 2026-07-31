@@ -116,7 +116,7 @@ export default function ChooseProperty() {
 
                 {/* Action Button - Smaller padding */}
                 <motion.button
-                  onClick={() => router.push("/properties")}
+                  onClick={() => router.push("/property-search")}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className={cn(

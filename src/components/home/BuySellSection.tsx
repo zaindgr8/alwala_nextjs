@@ -18,7 +18,7 @@ const paths = [
     description: "From waterfront villas to urban penthouses, we guide you through Oman's most exclusive listings and help you qualify for lifetime residency.",
     image: "/p1.jpg",
     ctaLabel: "Explore Listings",
-    ctaHref: "/properties",
+    ctaHref: "/property-search",
     isPopup: false,
     buttonClass: "bg-gold text-matte-black hover:bg-ivory",
     bullets: ["Freehold properties", "Lifetime residency eligible", "Off-plan & ready units"],

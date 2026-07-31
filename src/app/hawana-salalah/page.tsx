@@ -33,7 +33,7 @@ export default function HawanaSalalahPage() {
         tagline="SOVEREIGN SHORES • THE JEWEL OF THE SOUTH"
         description=" Hawana Salalah offers luxury villas, beachfront apartments, and lagoon homes in Oman's leading resort community, perfect for holiday homes, family living, and long-term property investment. "
         image="/communities/Hawana Salalah/1 (1).jpg"
-        primaryCta={{ text: "View Waterfront Estates", href: "/properties?communities=Hawana%20Salalah" }}
+        primaryCta={{ text: "View Waterfront Estates", href: "/property-search?communities=Hawana%20Salalah" }}
         secondaryCta={{ text: "Request Exclusive Brochure", href: "#contact" }}
       />
 

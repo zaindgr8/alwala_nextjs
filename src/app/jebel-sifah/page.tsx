@@ -33,7 +33,7 @@ export default function JebelSifahPage() {
         tagline="COASTAL ESCAPE • NATURE'S LUXURY"
         description="Buy Property in Jebel Sifah with luxury and marina apartments for sale, offering beachfront living, championship golf and exceptional long-term investment value."
         image="/communities/Jebel Sifah/1 (1).png"
-        primaryCta={{ text: "View Secluded Estates", href: "/properties?communities=Jebel%20Sifah" }}
+        primaryCta={{ text: "View Secluded Estates", href: "/property-search?communities=Jebel%20Sifah" }}
         secondaryCta={{ text: "Request Site Map", href: "#contact" }}
       />
 

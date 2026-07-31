@@ -30,7 +30,7 @@ export default function RelatedProperties({ currentProperty }: RelatedProperties
           </h2>
         </div>
         <Link
-          href="/properties"
+          href="/property-search"
           className="text-xs uppercase tracking-widest text-matte-black border-b border-matte-black/20 pb-2 hover:text-gold hover:border-gold transition-all duration-500"
         >
           Back to All Listings

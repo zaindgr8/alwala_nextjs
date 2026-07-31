@@ -34,7 +34,7 @@ export default function AlMoujPage() {
         tagline="PRESTIGIOUS WATERFRONT LIVING • WORLD-CLASS GOLF"
         description="Luxury villas, marina apartments and waterfront homes in one of Oman's most prestigious coastal communities — built for premium living and lasting investment value."
         image="/communities/Al Mouj/1 (1).jpg"
-        primaryCta={{ text: "Explore the Portfolio", href: "/properties?communities=Al%20Mouj" }}
+        primaryCta={{ text: "Explore the Portfolio", href: "/property-search?communities=Al%20Mouj" }}
         secondaryCta={{ text: "Request Brochure", href: "#contact" }}
       />
 

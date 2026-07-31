@@ -68,21 +68,19 @@ function PropertiesContent() {
   }, [searchParams]);
 
   const updateFilters = (newFilters: Partial<FiltersType & { query: string }>) => {
-    setFilters(prev => {
-      const updated = { ...prev, ...newFilters };
+    const updated = { ...filters, ...newFilters };
 
-      const params = new URLSearchParams();
-      if (updated.status.length > 0) params.set("status", updated.status.join(","));
-      if (updated.communities.length > 0) params.set("communities", updated.communities.join(","));
-      if (updated.type.length > 0) params.set("type", updated.type.join(","));
-      if (updated.minPrice) params.set("minPrice", updated.minPrice.toString());
-      if (updated.maxPrice) params.set("maxPrice", updated.maxPrice.toString());
-      if (updated.sortBy !== "Newest First") params.set("sortBy", updated.sortBy);
-      if (updated.query) params.set("query", updated.query);
+    const params = new URLSearchParams();
+    if (updated.status.length > 0) params.set("status", updated.status.join(","));
+    if (updated.communities.length > 0) params.set("communities", updated.communities.join(","));
+    if (updated.type.length > 0) params.set("type", updated.type.join(","));
+    if (updated.minPrice) params.set("minPrice", updated.minPrice.toString());
+    if (updated.maxPrice) params.set("maxPrice", updated.maxPrice.toString());
+    if (updated.sortBy !== "Newest First") params.set("sortBy", updated.sortBy);
+    if (updated.query) params.set("query", updated.query);
 
-      replace(`${pathname}?${params.toString()}`, { scroll: false });
-      return updated;
-    });
+    setFilters(updated);
+    replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
   useEffect(() => {

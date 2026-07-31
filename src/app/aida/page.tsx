@@ -33,7 +33,7 @@ export default function AidaPage() {
         tagline="THE FUTURE OF LUXURY • COASTAL SOPHISTICATION"
         description=" Explore AIDA in Muscat Oman, a premium destination for luxury property in Oman with villas and apartments for sale, creating one of the most prestigious coastal communities in Oman."
         image="/communities/AIDA/1 (1).jpeg"
-        primaryCta={{ text: "Discover the Vision", href: "/properties?communities=AIDA" }}
+        primaryCta={{ text: "Discover the Vision", href: "/property-search?communities=AIDA" }}
         secondaryCta={{ text: "Early Access Brochure", href: "#contact" }}
       />
 

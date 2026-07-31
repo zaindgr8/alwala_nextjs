@@ -20,6 +20,20 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/properties',
+        destination: '/property-search',
+        permanent: true,
+      },
+      {
+        source: '/properties/:slug',
+        destination: '/property-search/:slug',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

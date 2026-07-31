@@ -243,7 +243,7 @@ export default function TopCommunities() {
             Discover all 8 ITC-approved communities with freehold &amp; residency eligibility
           </p>
           <a
-            href="/properties"
+            href="/property-search"
             className="inline-flex items-center gap-3 bg-matte-black text-ivory px-10 py-4 text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-gold hover:text-matte-black transition-all duration-500"
           >
             View All Communities

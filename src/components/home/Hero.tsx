@@ -23,8 +23,25 @@ const propertyTypes = ["Apartment", "Villa", "Penthouse", "Townhouse", "Studio",
 const communities = ["Al Mouj", "AIDA", "Muscat Bay", "Sultan Haitham City", "Jebel Sifah", "Hawana Salalah"];
 const budgets = ["Under OMR 50K", "OMR 50K–100K", "OMR 100K–200K", "OMR 200K–500K", "OMR 500K+"];
 
+const typeMap: Record<string, string> = {
+  "Apartment": "APARTMENT",
+  "Villa": "VILLA",
+  "Townhouse": "TOWNHOUSE",
+  "Penthouse": "PENTHOUSE",
+  "Studio": "STUDIO",
+  "Commercial": "COMMERCIAL",
+};
+
+const budgetMap: Record<string, { min?: number; max?: number }> = {
+  "Under OMR 50K": { max: 50000 },
+  "OMR 50K–100K": { min: 50000, max: 100000 },
+  "OMR 100K–200K": { min: 100000, max: 200000 },
+  "OMR 200K–500K": { min: 200000, max: 500000 },
+  "OMR 500K+": { min: 500000 },
+};
+
+
 export default function Hero() {
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [tickerIndex, setTickerIndex] = useState(0);
   const [propertyType, setPropertyType] = useState("");
   const [community, setCommunity] = useState("");
@@ -32,15 +49,6 @@ export default function Hero() {
   const { openPopup } = usePopup();
   const hasOpened = useRef(false);
   const router = useRouter();
-  const images = ["/p2.jpg"];
-
-  // Image carousel
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % images.length);
-    }, 7000);
-    return () => clearInterval(timer);
-  }, [images.length]);
 
   // Trust ticker rotation
   useEffect(() => {
@@ -66,39 +74,40 @@ export default function Hero() {
 
   const handleSearch = () => {
     const params = new URLSearchParams();
-    if (propertyType) params.set("type", propertyType);
-    if (community) params.set("community", community);
-    if (budget) params.set("budget", budget);
-    router.push(`/properties?${params.toString()}`);
+
+    if (propertyType && typeMap[propertyType]) {
+      params.set("type", typeMap[propertyType]);
+    }
+
+    if (community) {
+      params.set("communities", community);
+    }
+
+    if (budget && budgetMap[budget]) {
+      const { min, max } = budgetMap[budget];
+      if (min) params.set("minPrice", min.toString());
+      if (max) params.set("maxPrice", max.toString());
+    }
+
+    router.push(`/property-search?${params.toString()}`);
   };
 
   return (
     <section className="relative z-50 h-screen w-full">
       {/* Cinematic Background */}
       <div className="absolute inset-0 z-0 overflow-hidden">
-        <AnimatePresence mode="popLayout">
-          <motion.div
-            key={currentIndex}
-            initial={{ opacity: 0, scale: 1 }}
-            animate={{ opacity: 1, scale: 1.06 }}
-            exit={{ opacity: 0 }}
-            transition={{
-              opacity: { duration: 2, ease: "linear" },
-              scale: { duration: 7, ease: "linear" },
-            }}
-            className="absolute inset-0 h-full w-full"
-          >
-            <Image
-              src={images[currentIndex]}
-              alt="Luxury Oman Real Estate"
-              fill
-              className="object-cover"
-              priority
-            />
-            <div className="absolute inset-0 bg-black/50" />
-            <div className="absolute inset-0 bg-gradient-to-b from-matte-black/30 via-transparent to-matte-black/70" />
-          </motion.div>
-        </AnimatePresence>
+        <div className="absolute inset-0 h-full w-full">
+          <video
+            src="/hero.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-black/50" />
+          <div className="absolute inset-0 bg-gradient-to-b from-matte-black/30 via-transparent to-matte-black/70" />
+        </div>
       </div>
 
       {/* Content */}
@@ -119,7 +128,7 @@ export default function Hero() {
             <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
             <span className="text-gold text-[10px] uppercase tracking-[0.25em] font-semibold">
               Oman&apos;s Trusted Luxury Real Estate Partner
-            </span>
+            </span
           </motion.div> */}
 
           {/* Headline */}
@@ -182,7 +191,7 @@ export default function Hero() {
             >
               <FaWhatsapp className="text-lg" />
               Chat on WhatsApp
-            </a>
+            </a
           </div> */}
         </motion.div>
       </div>
@@ -204,7 +213,7 @@ export default function Hero() {
             </motion.span>
           </AnimatePresence>
           <span className="w-1.5 h-1.5 rounded-full bg-gold flex-shrink-0" />
-        </div>
+        </div
       </div> */}
 
       {/* WhatsApp Floating Button */}

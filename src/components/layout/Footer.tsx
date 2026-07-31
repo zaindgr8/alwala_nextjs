@@ -13,19 +13,19 @@ import {
 } from "react-icons/fa";
 
 const EXPLORE_LINKS = [
-  { name: "Properties", href: "/properties" },
-  { name: "Communities", href: "/properties" },
+  { name: "Properties", href: "/property-search" },
+  { name: "Communities", href: "/property-search" },
   { name: "Blog", href: "/blog" },
   { name: "About Us", href: "/about-us" },
   { name: "Careers", href: "/careers" },
 ];
 
 const PROPERTY_TYPES = [
-  { name: "Villas", href: "/properties" },
-  { name: "Apartments", href: "/properties" },
-  { name: "Penthouses", href: "/properties" },
-  { name: "Off-Plan", href: "/properties" },
-  { name: "Freehold ITC", href: "/properties" },
+  { name: "Villas", href: "/property-search" },
+  { name: "Apartments", href: "/property-search" },
+  { name: "Penthouses", href: "/property-search" },
+  { name: "Off-Plan", href: "/property-search" },
+  { name: "Freehold ITC", href: "/property-search" },
 ];
 
 const SOCIAL_LINKS = [
