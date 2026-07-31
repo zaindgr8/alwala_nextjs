@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Bed, Bath, Square, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence, type PanInfo } from "framer-motion";
+import { Bed, Bath, Square, MapPin, ChevronLeft, ChevronRight, ImageOff } from "lucide-react";
 import { PropertyUI } from "@/types/property";
 import PropertyInquiryModal from "./PropertyInquiryModal";
 
@@ -11,20 +11,56 @@ interface PropertyCardProps {
   index: number;
 }
 
+// A swipe advances the slide if it travelled far enough, or was flicked hard
+// enough that distance alone would understate the intent.
+const SWIPE_DISTANCE_THRESHOLD = 50;
+const SWIPE_VELOCITY_THRESHOLD = 500;
+
+// The incoming slide enters from the side you're heading towards, and the
+// outgoing one leaves the opposite way, so the motion tracks the swipe.
+const slideVariants = {
+  enter: (direction: number) => ({ x: direction >= 0 ? "100%" : "-100%" }),
+  center: { x: "0%" },
+  exit: (direction: number) => ({ x: direction >= 0 ? "-100%" : "100%" }),
+};
+
 export default function PropertyCard({ property, index }: PropertyCardProps) {
-  const [currentImage, setCurrentImage] = useState(0);
+  const images = property.images ?? [];
+  const hasMultiple = images.length > 1;
+
+  // Direction travels with the index so the exiting slide animates the same
+  // way the entering one does.
+  const [[currentImage, direction], setSlide] = useState<[number, number]>([0, 0]);
+  const [loadedImages, setLoadedImages] = useState<Record<number, boolean>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const paginate = (step: number) => {
+    if (!hasMultiple) return;
+    setSlide(([current]) => [(current + step + images.length) % images.length, step]);
+  };
+
+  const markLoaded = (i: number) =>
+    setLoadedImages((prev) => (prev[i] ? prev : { ...prev, [i]: true }));
+
+  const handleDragEnd = (_event: unknown, info: PanInfo) => {
+    const { offset, velocity } = info;
+    if (offset.x < -SWIPE_DISTANCE_THRESHOLD || velocity.x < -SWIPE_VELOCITY_THRESHOLD) {
+      paginate(1);
+    } else if (offset.x > SWIPE_DISTANCE_THRESHOLD || velocity.x > SWIPE_VELOCITY_THRESHOLD) {
+      paginate(-1);
+    }
+  };
 
   const nextImage = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setCurrentImage((prev) => (prev + 1) % property.images.length);
+    paginate(1);
   };
 
   const prevImage = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setCurrentImage((prev) => (prev - 1 + property.images.length) % property.images.length);
+    paginate(-1);
   };
 
   return (
@@ -37,24 +73,56 @@ export default function PropertyCard({ property, index }: PropertyCardProps) {
         className="group relative bg-white border border-champagne/30 overflow-hidden rounded-sm hover:shadow-2xl hover:shadow-gold/10 transition-all duration-700 h-full flex flex-col"
       >
         {/* Image Slider Container */}
-        <div className="relative h-[300px] w-full overflow-hidden group/slider">
-          <AnimatePresence mode="wait">
-            <motion.img
-              key={currentImage}
-              src={property.images[currentImage]}
-              alt={property.title}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.5 }}
-            />
-          </AnimatePresence>
+        <div className="relative h-[300px] w-full overflow-hidden group/slider bg-champagne/20">
+          {images.length > 0 ? (
+            <AnimatePresence initial={false} custom={direction}>
+              <motion.img
+                key={currentImage}
+                src={images[currentImage]}
+                alt={property.title}
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ x: { type: "spring", stiffness: 260, damping: 30 } }}
+                whileHover={{ scale: 1.05 }}
+                drag={hasMultiple ? "x" : false}
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.15}
+                onDragEnd={handleDragEnd}
+                draggable={false}
+                onLoad={() => markLoaded(currentImage)}
+                onError={() => markLoaded(currentImage)}
+                // A cached image can finish loading before React attaches
+                // onLoad, which would strand the spinner on screen.
+                ref={(node) => {
+                  if (node?.complete) markLoaded(currentImage);
+                }}
+                // Keep vertical page scrolling available over the image.
+                style={{ touchAction: "pan-y" }}
+                className={`absolute inset-0 w-full h-full object-cover select-none ${
+                  hasMultiple ? "cursor-grab active:cursor-grabbing" : ""
+                }`}
+              />
+            </AnimatePresence>
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-matte-black/25">
+              <ImageOff size={28} />
+            </div>
+          )}
+
+          {/* Loading state for the visible slide */}
+          {images.length > 0 && !loadedImages[currentImage] && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-champagne/40 animate-pulse">
+              <span className="h-8 w-8 rounded-full border-2 border-matte-black/15 border-t-gold animate-spin" />
+            </div>
+          )}
 
           <div className="absolute inset-0 bg-gradient-to-t from-matte-black/60 via-transparent to-transparent pointer-events-none" />
 
           {/* Status Tags */}
-          <div className="absolute top-6 left-6 flex flex-wrap gap-2">
+          <div className="absolute top-6 left-6 z-10 flex flex-wrap gap-2">
             <span className="bg-gold text-matte-black px-3 py-1 text-[10px] uppercase tracking-widest font-bold">
               {property.status === "OFF_PLAN" ? "Off-Plan" :
                property.status === "UNDER_CONSTRUCTION" ? "Under Construction" :
@@ -69,26 +137,35 @@ export default function PropertyCard({ property, index }: PropertyCardProps) {
             )}
           </div>
 
-          {/* Navigation Arrows */}
-          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-2 opacity-0 group-hover/slider:opacity-100 transition-opacity duration-300">
-            <button
-              onClick={prevImage}
-              className="p-2 rounded-full bg-white/80 text-matte-black hover:bg-gold transition-colors shadow-sm"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <button
-              onClick={nextImage}
-              className="p-2 rounded-full bg-white/80 text-matte-black hover:bg-gold transition-colors shadow-sm"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
+          {/* Navigation Arrows — always visible on touch, hover-revealed on
+              pointer devices where the hover affordance actually exists. */}
+          {hasMultiple && (
+            <div className="absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 flex justify-between px-2 opacity-100 transition-opacity duration-300 md:opacity-0 md:group-hover/slider:opacity-100 md:focus-within:opacity-100">
+              <button
+                type="button"
+                onClick={prevImage}
+                aria-label="Previous image"
+                className="p-2 rounded-full bg-white/80 text-matte-black hover:bg-gold transition-colors shadow-sm"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={nextImage}
+                aria-label="Next image"
+                className="p-2 rounded-full bg-white/80 text-matte-black hover:bg-gold transition-colors shadow-sm"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
 
           {/* Image Counter */}
-          <div className="absolute bottom-4 right-4 bg-matte-black/40 backdrop-blur-md text-ivory text-[9px] uppercase tracking-widest px-2 py-1 rounded-full">
-            {currentImage + 1} / {property.images.length}
-          </div>
+          {hasMultiple && (
+            <div className="absolute bottom-4 right-4 z-10 bg-matte-black/40 backdrop-blur-md text-ivory text-[9px] uppercase tracking-widest px-2 py-1 rounded-full">
+              {currentImage + 1} / {images.length}
+            </div>
+          )}
         </div>
 
         {/* Content */}
