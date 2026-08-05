@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { UserPlus, Loader2, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 interface UserCreationFormProps {
   onSuccess?: () => void;
@@ -12,6 +13,7 @@ interface UserCreationFormProps {
 export default function UserCreationForm({ onSuccess }: UserCreationFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -64,7 +66,12 @@ export default function UserCreationForm({ onSuccess }: UserCreationFormProps) {
   return (
     <div className="space-y-6">
       <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-4">
+  {phoneError && (
+    <div className="col-span-full text-red-400 text-xs uppercase tracking-widest font-bold text-center animate-in fade-in slide-in-from-top-1">
+      {phoneError}
+    </div>
+  )}
+  <div className="space-y-4">
           <div className="space-y-2">
             <label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Full Name</label>
             <input
@@ -104,16 +111,16 @@ export default function UserCreationForm({ onSuccess }: UserCreationFormProps) {
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Phone Number</label>
-            <input
-              name="phone"
-              value={formData.phone}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 bg-luxury-black border border-luxury-border rounded-xl focus:outline-none focus:ring-2 focus:ring-gold-primary/50 transition-all text-white"
-              placeholder="+968 9xxx xxxx"
-              required
-            />
-          </div>
+  <label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Phone Number</label>
+  <PhoneInput
+    required
+    placeholder="+968 9xxx xxxx"
+    variant="boxed"
+    value={formData.phone}
+    onChange={val => setFormData(prev => ({ ...prev, phone: val }))}
+    onValidationError={setPhoneError}
+  />
+</div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Role</label>

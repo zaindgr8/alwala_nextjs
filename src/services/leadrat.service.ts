@@ -1,4 +1,5 @@
 import { supabaseRead } from "@/lib/supabase-read";
+import { matchCallingCode } from "@/lib/country-codes";
 
 // Leadrat CRM "Website" PUSH integration.
 // Docs/endpoint provided by Leadrat for Alwalaa. Every website inquiry is
@@ -24,16 +25,21 @@ export interface LeadratInput {
   propertyId?: string | null;
 }
 
-// Splits a raw phone string into { countryCode, mobile }. Handles a leading
-// "+", spaces/dashes, and an inline Oman country code; falls back to the
-// default country code when none is present.
+// Splits a raw phone string into { countryCode, mobile }. The phone input emits
+// "+<code> <number>", so the code is matched against the known calling-code list
+// (longest prefix first) rather than guessed from digit counts. Tolerates a
+// missing "+" and any separators; falls back to the default code when the number
+// carries no recognised one (e.g. a legacy local-only record).
 function splitPhone(raw: string): { countryCode: string; mobile: string } {
-  const digits = (raw || "").replace(/[^\d]/g, "");
-  const cc = LEADRAT_DEFAULT_COUNTRY_CODE;
-  if (digits.startsWith(cc) && digits.length > cc.length) {
-    return { countryCode: cc, mobile: digits.slice(cc.length) };
+  const digits = (raw || "").replace(/\D/g, "");
+  const matched = matchCallingCode(raw);
+
+  if (matched) {
+    const bare = matched.slice(1);
+    return { countryCode: bare, mobile: digits.slice(bare.length) };
   }
-  return { countryCode: cc, mobile: digits };
+
+  return { countryCode: LEADRAT_DEFAULT_COUNTRY_CODE, mobile: digits };
 }
 
 function pad(n: number): string {

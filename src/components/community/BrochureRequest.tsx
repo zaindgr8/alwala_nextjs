@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import PhoneInput from "@/components/ui/PhoneInput";
 
 interface BrochureRequestProps {
   data: {
@@ -14,6 +15,7 @@ interface BrochureRequestProps {
 export default function BrochureRequest({ data, communityName }: BrochureRequestProps) {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -96,10 +98,15 @@ export default function BrochureRequest({ data, communityName }: BrochureRequest
             <div className="relative bg-matte-black border border-gold/30 p-8 md:p-12 rounded-[2.5rem] shadow-2xl backdrop-blur-xl">
               {!submitted ? (
                 <motion.form
-                  onSubmit={handleSubmit}
-                  className="grid grid-cols-1 gap-8"
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+  onSubmit={handleSubmit}
+  className="grid grid-cols-1 gap-8"
+>
+  {phoneError && (
+    <div className="text-red-400 text-[10px] uppercase tracking-widest font-bold text-center animate-in fade-in slide-in-from-top-1">
+      {phoneError}
+    </div>
+  )}
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="flex flex-col gap-3">
                       <label className="text-gold text-[10px] uppercase tracking-widest font-bold ml-1">Full Name</label>
                       <input
@@ -125,16 +132,17 @@ export default function BrochureRequest({ data, communityName }: BrochureRequest
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="flex flex-col gap-3">
-                      <label className="text-gold text-[10px] uppercase tracking-widest font-bold ml-1">Phone Number</label>
-                      <input
-                        required
-                        type="tel"
-                        placeholder="+968 0000 0000"
-                        value={formData.phone}
-                        onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                        className="bg-ivory/5 border-b border-ivory/20 py-4 text-ivory placeholder:text-ivory/20 focus:border-gold transition-all outline-none font-light"
-                      />
-                    </div>
+  <label className="text-gold text-[10px] uppercase tracking-widest font-bold ml-1">Phone Number</label>
+  <PhoneInput
+    required
+    placeholder="0000 0000"
+    variant="minimal"
+    className="border-ivory/20 focus:border-gold text-ivory placeholder:text-ivory/20"
+    value={formData.phone}
+    onChange={val => setFormData({ ...formData, phone: val })}
+    onValidationError={setPhoneError}
+  />
+</div>
                     <div className="flex flex-col gap-3">
                       <label className="text-gold text-[10px] uppercase tracking-widest font-bold ml-1">Property Interest</label>
                       <select

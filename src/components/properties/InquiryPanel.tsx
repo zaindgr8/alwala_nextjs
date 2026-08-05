@@ -2,8 +2,9 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Send, Calendar, User, Mail, Phone } from "lucide-react";
+import { Send, Calendar, User, Mail } from "lucide-react";
 import { PropertyUI } from "@/types/property";
+import PhoneInput from "@/components/ui/PhoneInput";
 
 interface InquiryPanelProps {
   property: PropertyUI;
@@ -12,6 +13,7 @@ interface InquiryPanelProps {
 export default function InquiryPanel({ property }: InquiryPanelProps) {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -78,6 +80,11 @@ export default function InquiryPanel({ property }: InquiryPanelProps) {
         </motion.div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
+          {phoneError && (
+            <div className="text-red-500 text-[10px] uppercase tracking-widest font-bold text-center">
+              {phoneError}
+            </div>
+          )}
           <div className="space-y-4">
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 text-matte-black/30" size={16} />
@@ -101,17 +108,15 @@ export default function InquiryPanel({ property }: InquiryPanelProps) {
                 className="w-full bg-ivory border border-champagne p-4 pl-10 text-xs outline-none focus:border-gold transition-all text-matte-black"
               />
             </div>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-matte-black/30" size={16} />
-              <input
-                type="tel"
-                required
-                placeholder="Phone Number"
-                value={formData.phone}
-                onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full bg-ivory border border-champagne p-4 pl-10 text-xs outline-none focus:border-gold transition-all text-matte-black"
-              />
-            </div>
+            <PhoneInput
+              required
+              placeholder="0000 0000"
+              variant="minimal"
+              className="[&>div]:bg-ivory [&>div]:border [&>div]:border-champagne [&>div]:focus-within:border-gold"
+              value={formData.phone}
+              onChange={val => setFormData({ ...formData, phone: val })}
+              onValidationError={setPhoneError}
+            />
             <div className="relative">
               <textarea
                 required

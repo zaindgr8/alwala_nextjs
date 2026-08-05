@@ -16,7 +16,11 @@
       "Bash(taskkill *)",
       "Bash(cmd /c \"taskkill /F /IM node.exe\")",
       "Bash(npx tsc *)",
-      "Bash(grep -i \"properties/\\\\[id\\\\]/route\\\\|properties\\\\\\\\\\\\\\\\\\\\[id\\\\]\")"
+      "Bash(grep -i \"properties/\\\\[id\\\\]/route\\\\|properties\\\\\\\\\\\\\\\\\\\\[id\\\\]\")",
+      "Bash(echo \"TSC_EXIT=$?\")",
+      "Bash(node \"C:\\\\Users\\\\ali\\\\AppData\\\\Local\\\\Temp\\\\claude-1000\\\\E--alwalaa-alwala-nextjs\\\\a35ac703-2dcf-753d-e298-ce672b149981\\\\scratchpad\\\\split-check.mjs\")",
+      "Bash(node -e \"console.log\\('zod version:', require\\('./node_modules/zod/package.json'\\).version\\)\")",
+      "Bash(npx next *)"
     ]
   }
 }

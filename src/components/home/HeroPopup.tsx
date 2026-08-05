@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import PhoneInput from "@/components/ui/PhoneInput";
 
 interface HeroPopupProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface HeroPopupProps {
 export default function HeroPopup({ isOpen, onClose }: HeroPopupProps) {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -106,6 +108,11 @@ export default function HeroPopup({ isOpen, onClose }: HeroPopupProps) {
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
+                  {phoneError && (
+                    <div className="text-red-500 text-[10px] uppercase tracking-widest font-bold text-center animate-in fade-in slide-in-from-top-1">
+                      {phoneError}
+                    </div>
+                  )}
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <label className="text-[10px] uppercase tracking-widest text-matte-black/40 font-bold">Full Name</label>
@@ -131,16 +138,16 @@ export default function HeroPopup({ isOpen, onClose }: HeroPopupProps) {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-[10px] uppercase tracking-widest text-matte-black/40 font-bold">Phone Number</label>
-                        <input
-                          required
-                          type="tel"
-                          placeholder="+968 00000000"
-                          className="w-full bg-transparent border-b border-champagne p-3 text-sm outline-none focus:border-gold transition-all text-matte-black"
-                          value={formData.phone}
-                          onChange={e => setFormData({...formData, phone: e.target.value})}
-                        />
-                      </div>
+  <label className="text-[10px] uppercase tracking-widest text-matte-black/40 font-bold">Phone Number</label>
+  <PhoneInput
+    required
+    placeholder="0000 0000"
+    variant="minimal"
+    value={formData.phone}
+    onChange={val => setFormData({...formData, phone: val})}
+    onValidationError={setPhoneError}
+  />
+</div>
                       <div className="space-y-2">
                         <label className="text-[10px] uppercase tracking-widest text-matte-black/40 font-bold">Budget Range</label>
                         <input
