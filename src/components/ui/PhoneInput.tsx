@@ -28,9 +28,19 @@ export default function PhoneInput({
   const [selectedCode, setSelectedCode] = useState("+968");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [filteredCodes, setFilteredCodes] = useState(COUNTRY_CODES);
-  const [isCodeSelected, setIsCodeSelected] = useState(false);
+  // Default to true so +968 is pre-selected and always included in emitted value
+  const [isCodeSelected, setIsCodeSelected] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // On mount: seed the parent with the default country code so the submitted
+  // phone always carries a code even if the user never interacts with the picker.
+  useEffect(() => {
+    if (!value) {
+      onChange("+968 ");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (value && !inputValue) {
@@ -39,7 +49,9 @@ export default function PhoneInput({
       const codeMatch = matchCallingCode(value);
       if (codeMatch) {
         setSelectedCode(codeMatch);
-        setInputValue(value.replace(/\D/g, "").slice(codeMatch.length - 1));
+        // codeMatch is e.g. "+971" (length 4), bare digits of code = length-1 = 3
+        const bareLen = codeMatch.length - 1; // digits-only length of the code
+        setInputValue(value.replace(/\D/g, "").slice(bareLen));
         setIsCodeSelected(true);
       }
     }
@@ -58,13 +70,11 @@ export default function PhoneInput({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
 
-    // If user deletes everything, reset
+    // If user clears the number field, keep the code selected but clear the number.
+    // The user can press Backspace again on an empty field to switch the country code.
     if (!val) {
       setInputValue("");
-      setIsCodeSelected(false);
-      setFilteredCodes(COUNTRY_CODES);
-      setIsDropdownOpen(true);
-      onChange("");
+      onChange(`${selectedCode} `);
       onValidationError?.(null);
       return;
     }
