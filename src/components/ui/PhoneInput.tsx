@@ -1,9 +1,16 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { ChevronDown } from "lucide-react";
-import { COUNTRY_CODES, matchCallingCode } from "@/lib/country-codes";
+import { ChevronDown, Search, X } from "lucide-react";
+import {
+  COUNTRY_CODES,
+  CountryCode,
+  DEFAULT_COUNTRY,
+  matchCallingCode,
+  findCountryByCode,
+  formatFullPhone,
+} from "@/lib/country-codes";
 
 interface PhoneInputProps {
   value: string;
@@ -24,219 +31,282 @@ export default function PhoneInput({
   required = false,
   onValidationError,
 }: PhoneInputProps) {
-  const [inputValue, setInputValue] = useState("");
-  const [selectedCode, setSelectedCode] = useState("+968");
+  const [selectedCountry, setSelectedCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
+  const [phoneDigits, setPhoneDigits] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [filteredCodes, setFilteredCodes] = useState(COUNTRY_CODES);
-  // Default to true so +968 is pre-selected and always included in emitted value
-  const [isCodeSelected, setIsCodeSelected] = useState(true);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const phoneInputRef = useRef<HTMLInputElement>(null);
 
-  // On mount: seed the parent with the default country code so the submitted
-  // phone always carries a code even if the user never interacts with the picker.
+  // Initialize and synchronize with external `value` prop
   useEffect(() => {
     if (!value) {
-      onChange("+968 ");
+      // If empty on mount, initialize parent with default country code (+968 )
+      onChange(`${DEFAULT_COUNTRY.code} `);
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
-  useEffect(() => {
-    if (value && !inputValue) {
-      // Parse existing value — longest calling code first, so "+968 ..." isn't
-      // matched as "+96"/"+9".
-      const codeMatch = matchCallingCode(value);
-      if (codeMatch) {
-        setSelectedCode(codeMatch);
-        // codeMatch is e.g. "+971" (length 4), bare digits of code = length-1 = 3
-        const bareLen = codeMatch.length - 1; // digits-only length of the code
-        setInputValue(value.replace(/\D/g, "").slice(bareLen));
-        setIsCodeSelected(true);
-      }
+    // If external value has changed or was provided
+    const matchedCode = matchCallingCode(value);
+    if (matchedCode) {
+      const country = findCountryByCode(matchedCode);
+      setSelectedCountry(country);
+      
+      const allDigits = value.replace(/\D/g, "");
+      const bareCode = matchedCode.replace("+", "");
+      const remainingDigits = allDigits.startsWith(bareCode)
+        ? allDigits.slice(bareCode.length)
+        : allDigits;
+      setPhoneDigits(remainingDigits);
+    } else {
+      // If no code matched but digits exist
+      const rawDigits = value.replace(/\D/g, "");
+      setPhoneDigits(rawDigits);
     }
-  }, [value, inputValue]);
+  }, []); // Run on initial mount
 
+  // Close dropdown on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setIsDropdownOpen(false);
+        setSearchQuery("");
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-
-    // If user clears the number field, keep the code selected but clear the number.
-    // The user can press Backspace again on an empty field to switch the country code.
-    if (!val) {
-      setInputValue("");
-      onChange(`${selectedCode} `);
-      onValidationError?.(null);
-      return;
+  // Focus search input when dropdown opens
+  useEffect(() => {
+    if (isDropdownOpen) {
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 50);
     }
+  }, [isDropdownOpen]);
 
-    // If code is already selected, just update the number part
-    if (isCodeSelected) {
-      setInputValue(val);
-      onChange(`${selectedCode} ${val}`);
-      onValidationError?.(null);
-      return;
-    }
-
-    // User is typing the country code
-    setInputValue(val);
-
-    // Filter matching codes
-    const searchTerm = val.toLowerCase().replace("+", "");
-    const matches = COUNTRY_CODES.filter(({ country, code }) =>
-      code.includes(searchTerm) ||
-      country.toLowerCase().includes(searchTerm)
+  // Filter countries by search query
+  const filteredCountries = useMemo(() => {
+    if (!searchQuery.trim()) return COUNTRY_CODES;
+    const query = searchQuery.toLowerCase().trim().replace("+", "");
+    return COUNTRY_CODES.filter(
+      (c) =>
+        c.country.toLowerCase().includes(query) ||
+        c.code.includes(query) ||
+        c.iso.toLowerCase().includes(query)
     );
+  }, [searchQuery]);
 
-    setFilteredCodes(matches);
-    setIsDropdownOpen(matches.length > 0);
+  // Handle phone number typing
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawVal = e.target.value;
 
-    // Check for exact code match
-    const exactMatch = COUNTRY_CODES.find(c => val === c.code || val === c.code.replace("+", ""));
-    if (exactMatch) {
-      setSelectedCode(exactMatch.code);
-      setIsCodeSelected(true);
-      setIsDropdownOpen(false);
-      setInputValue("");
-      onChange(exactMatch.code + " ");
-      onValidationError?.(null);
-    } else {
-      onChange(val);
+    // Check if user pasted a full number with '+' or international code
+    if (rawVal.startsWith("+") || rawVal.startsWith("00")) {
+      const matched = matchCallingCode(rawVal);
+      if (matched) {
+        const country = findCountryByCode(matched);
+        setSelectedCountry(country);
+        const digits = rawVal.replace(/\D/g, "").slice(matched.replace("+", "").length);
+        setPhoneDigits(digits);
+        onChange(`${country.code} ${digits}`.trim());
+        onValidationError?.(null);
+        return;
+      }
     }
-  };
 
-  const handleCodeSelect = (code: string) => {
-    setSelectedCode(code);
-    setIsCodeSelected(true);
-    setIsDropdownOpen(false);
-    setInputValue("");
-    onChange(code + " ");
+    // Only allow numbers and spaces in the subscriber field
+    const digitsOnly = rawVal.replace(/[^\d\s]/g, "");
+    setPhoneDigits(digitsOnly);
+
+    // Always emit with (+) sign and country code: e.g. "+968 91234567"
+    const formatted = digitsOnly.trim()
+      ? `${selectedCountry.code} ${digitsOnly.trim()}`
+      : `${selectedCountry.code} `;
+    
+    onChange(formatted);
     onValidationError?.(null);
-    inputRef.current?.focus();
   };
 
-  const handleFocus = () => {
-    if (!isCodeSelected) {
-      setIsDropdownOpen(true);
-    }
+  // Handle selecting a country from the dropdown
+  const handleSelectCountry = (country: CountryCode) => {
+    setSelectedCountry(country);
+    setIsDropdownOpen(false);
+    setSearchQuery("");
+
+    // Emit updated phone with new country code and existing digits
+    const formatted = phoneDigits.trim()
+      ? `${country.code} ${phoneDigits.trim()}`
+      : `${country.code} `;
+    
+    onChange(formatted);
+    onValidationError?.(null);
+
+    // Focus back to phone number input
+    phoneInputRef.current?.focus();
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Backspace" && inputValue === "" && isCodeSelected) {
-      // Allow user to go back and change the country code
-      setIsCodeSelected(false);
-      setInputValue(selectedCode);
-      setIsDropdownOpen(true);
-      e.preventDefault();
-    }
-  };
-
-  const wrapperClasses = cn(
-    "relative transition-all",
-    className
-  );
-
-  const inputWrapperClasses = cn(
-    "flex items-center gap-2 transition-all",
-    variant === "minimal"
-      ? "border-b border-champagne focus-within:border-gold bg-transparent"
-      : "bg-luxury-black border border-luxury-border rounded-xl focus-within:ring-2 focus-within:ring-gold-primary/50 px-3"
-  );
-
-  const prefixClasses = cn(
-    "font-light text-sm select-none",
-    variant === "minimal"
-      ? "text-matte-black/60 pl-3"
-      : "text-white/60 pl-3"
-  );
-
-  const selectedCodeClasses = cn(
-    "font-medium text-sm",
-    variant === "minimal"
-      ? "text-gold"
-      : "text-gold-primary"
-  );
-
-  const inputClasses = cn(
-    "outline-none font-light text-sm w-full transition-all",
-    variant === "minimal"
-      ? "bg-transparent text-matte-black p-3 placeholder:text-matte-black/40"
-      : "bg-transparent text-white p-3 placeholder:text-zinc-500"
-  );
-
-  const dropdownClasses = cn(
-    "absolute top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto z-50 shadow-lg",
-    variant === "minimal"
-      ? "bg-ivory border border-champagne"
-      : "bg-luxury-black border border-luxury-border rounded-lg"
-  );
-
-  const dropdownItemClasses = (isSelected: boolean) => cn(
-    "px-4 py-2 cursor-pointer transition-colors text-sm",
-    variant === "minimal"
-      ? cn(
-          "hover:bg-champagne",
-          isSelected ? "bg-gold/10 text-gold font-medium" : "text-matte-black"
-        )
-      : cn(
-          "hover:bg-luxury-border",
-          isSelected ? "bg-gold-primary/10 text-gold-primary font-medium" : "text-white"
-        )
-  );
+  const isMinimal = variant === "minimal";
 
   return (
-    <div className={wrapperClasses} ref={dropdownRef}>
-      <div className={inputWrapperClasses}>
-        <span className={prefixClasses}>+</span>
-        {isCodeSelected && (
-          <span className={selectedCodeClasses}>{selectedCode.replace("+", "")}</span>
+    <div className={cn("relative w-full", className)} ref={dropdownRef}>
+      <div
+        className={cn(
+          "flex items-center transition-all duration-200",
+          isMinimal
+            ? "border-b border-champagne focus-within:border-gold bg-transparent"
+            : "bg-luxury-black border border-luxury-border rounded-xl focus-within:ring-2 focus-within:ring-gold-primary/50"
         )}
-        <input
-          ref={inputRef}
-          required={required}
-          type="tel"
-          placeholder={isCodeSelected ? placeholder : "971 or UAE..."}
-          value={inputValue}
-          onChange={handleInputChange}
-          onFocus={handleFocus}
-          onKeyDown={handleKeyDown}
-          className={inputClasses}
-        />
-        {!isCodeSelected && (
-          <ChevronDown
-            size={16}
+      >
+        {/* Interactive Country Code Selector Trigger */}
+        <button
+          type="button"
+          onClick={() => setIsDropdownOpen((prev) => !prev)}
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-3 text-sm transition-colors cursor-pointer select-none shrink-0 group",
+            isMinimal
+              ? "hover:bg-champagne/40 text-matte-black border-r border-champagne/60"
+              : "hover:bg-luxury-border/60 text-white border-r border-luxury-border"
+          )}
+          title="Change Country Code"
+        >
+          <span className="text-base leading-none">{selectedCountry.flag}</span>
+          <span
             className={cn(
-              "mr-3 transition-transform",
-              variant === "minimal" ? "text-matte-black/40" : "text-white/40",
+              "font-medium text-xs tracking-wider",
+              isMinimal ? "text-gold font-semibold" : "text-gold-primary font-semibold"
+            )}
+          >
+            {selectedCountry.code}
+          </span>
+          <ChevronDown
+            size={14}
+            className={cn(
+              "transition-transform duration-200",
+              isMinimal ? "text-matte-black/50 group-hover:text-matte-black" : "text-white/50 group-hover:text-white",
               isDropdownOpen && "rotate-180"
             )}
           />
-        )}
+        </button>
+
+        {/* Phone Subscriber Digits Input */}
+        <input
+          ref={phoneInputRef}
+          type="tel"
+          required={required}
+          value={phoneDigits}
+          onChange={handlePhoneChange}
+          placeholder={placeholder}
+          className={cn(
+            "w-full px-3 py-3 text-sm outline-none font-light bg-transparent transition-all",
+            isMinimal
+              ? "text-matte-black placeholder:text-matte-black/40"
+              : "text-white placeholder:text-zinc-500"
+          )}
+        />
       </div>
 
-      {isDropdownOpen && !isCodeSelected && filteredCodes.length > 0 && (
-        <div className={dropdownClasses}>
-          {filteredCodes.map(({ country, code }) => (
-            <div
-              key={`${country}-${code}`}
-              className={dropdownItemClasses(code === selectedCode)}
-              onClick={() => handleCodeSelect(code)}
-            >
-              <span className="font-medium">{code}</span>
-              <span className={cn("ml-2", variant === "minimal" ? "text-matte-black/60" : "text-white/60")}>
-                {country}
-              </span>
-            </div>
-          ))}
+      {/* Searchable Country Code Dropdown Popover */}
+      {isDropdownOpen && (
+        <div
+          className={cn(
+            "absolute top-full left-0 mt-2 w-80 max-w-[95vw] rounded-xl shadow-2xl z-[150] border overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-2 duration-150",
+            isMinimal
+              ? "bg-ivory border-champagne shadow-black/10"
+              : "bg-luxury-black border-luxury-border shadow-black/50"
+          )}
+          style={{ maxHeight: "320px" }}
+        >
+          {/* Search Box */}
+          <div
+            className={cn(
+              "p-2.5 border-b sticky top-0 z-10 flex items-center gap-2",
+              isMinimal
+                ? "bg-ivory/95 backdrop-blur-sm border-champagne"
+                : "bg-luxury-black/95 backdrop-blur-sm border-luxury-border"
+            )}
+          >
+            <Search
+              size={14}
+              className={isMinimal ? "text-matte-black/40" : "text-zinc-500"}
+            />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search country or code..."
+              className={cn(
+                "w-full text-xs outline-none bg-transparent",
+                isMinimal
+                  ? "text-matte-black placeholder:text-matte-black/40"
+                  : "text-white placeholder:text-zinc-500"
+              )}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className={cn(
+                  "p-0.5 rounded-full",
+                  isMinimal ? "hover:bg-champagne" : "hover:bg-luxury-border"
+                )}
+              >
+                <X size={12} className={isMinimal ? "text-matte-black/60" : "text-zinc-400"} />
+              </button>
+            )}
+          </div>
+
+          {/* Country List */}
+          <div className="overflow-y-auto flex-1 p-1 divide-y divide-transparent">
+            {filteredCountries.length === 0 ? (
+              <div
+                className={cn(
+                  "p-4 text-center text-xs",
+                  isMinimal ? "text-matte-black/50" : "text-zinc-500"
+                )}
+              >
+                No country found
+              </div>
+            ) : (
+              filteredCountries.map((country) => {
+                const isSelected = country.code === selectedCountry.code && country.country === selectedCountry.country;
+                return (
+                  <button
+                    key={`${country.iso}-${country.code}-${country.country}`}
+                    type="button"
+                    onClick={() => handleSelectCountry(country)}
+                    className={cn(
+                      "w-full flex items-center justify-between px-3 py-2 text-xs rounded-lg transition-all text-left cursor-pointer",
+                      isMinimal
+                        ? isSelected
+                          ? "bg-gold/15 text-matte-black font-semibold"
+                          : "hover:bg-champagne/60 text-matte-black"
+                        : isSelected
+                        ? "bg-gold-primary/20 text-white font-semibold"
+                        : "hover:bg-luxury-border/60 text-zinc-300"
+                    )}
+                  >
+                    <div className="flex items-center gap-2.5 truncate">
+                      <span className="text-base leading-none">{country.flag}</span>
+                      <span className="truncate">{country.country}</span>
+                    </div>
+                    <span
+                      className={cn(
+                        "ml-2 font-mono font-medium shrink-0",
+                        isMinimal ? "text-gold" : "text-gold-primary"
+                      )}
+                    >
+                      {country.code}
+                    </span>
+                  </button>
+                );
+              })
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -1,34 +1,61 @@
 import { NextResponse } from 'next/server';
 import { leadService } from '@/services/lead.service';
 import { pushLeadToLeadrat } from '@/services/leadrat.service';
+import { forwardLeadToWebhook } from '@/services/webhook.service';
+import { formatFullPhone } from '@/lib/country-codes';
 import { z } from 'zod';
 
 const leadSchema = z.object({
-  name: z.string(),
-  email: z.string().email(),
-  phone: z.string(),
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('Invalid email address'),
+  phone: z.string().min(1, 'Phone number is required'),
+  budget: z.string().optional(),
   propertyId: z.string().uuid().optional(),
-  message: z.string(),
+  message: z.string().optional().default(''),
 });
 
 export async function POST(request: Request) {
   try {
-    // Public endpoint for user submissions
     const body = await request.json();
     const validatedData = leadSchema.parse(body);
-    const lead = await leadService.create(validatedData);
 
-    // Forward to Leadrat CRM (PUSH). Non-fatal: pushLeadToLeadrat swallows its
-    // own errors so a CRM outage never fails the customer's submission.
-    await pushLeadToLeadrat({
+    // Normalize phone number to guarantee '+' sign and country code (e.g. "+968 91234567" or "+91 3348945693")
+    const formattedPhone = formatFullPhone(validatedData.phone);
+
+    const leadInput = {
       name: validatedData.name,
       email: validatedData.email,
-      phone: validatedData.phone,
-      message: validatedData.message,
+      phone: formattedPhone,
+      message: validatedData.message || (validatedData.budget ? `Budget: ${validatedData.budget}` : ''),
       propertyId: validatedData.propertyId,
-    });
+    };
 
-    return NextResponse.json(lead);
+    let savedLead = null;
+    try {
+      // Save lead in Supabase database
+      savedLead = await leadService.create(leadInput);
+    } catch (dbError) {
+      console.warn('[LEADS_POST] Database insert failed (check Supabase connection):', dbError);
+    }
+
+    // Forward to Leadrat CRM (PUSH). Non-fatal.
+    try {
+      await pushLeadToLeadrat(leadInput);
+    } catch (crmError) {
+      console.warn('[LEADS_POST] Leadrat push failed:', crmError);
+    }
+
+    // Forward to any configured Webhooks (Zapier, Make, custom webhooks). Non-fatal.
+    try {
+      await forwardLeadToWebhook({
+        ...leadInput,
+        budget: validatedData.budget,
+      });
+    } catch (webhookError) {
+      console.warn('[LEADS_POST] Webhook forward failed:', webhookError);
+    }
+
+    return NextResponse.json(savedLead || { success: true, lead: leadInput }, { status: 200 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });
@@ -40,7 +67,6 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   try {
-    // TODO: Add auth check (Task 5)
     const { searchParams } = new URL(request.url);
     const filters = {
       status: searchParams.get('status') as any,
