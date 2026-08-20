@@ -213,20 +213,19 @@ export default function PhoneInput({
       {isDropdownOpen && (
         <div
           className={cn(
-            "absolute top-full left-0 mt-2 w-80 max-w-[95vw] rounded-xl shadow-2xl z-[150] border overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-2 duration-150",
+            "absolute top-full left-0 mt-2 w-80 max-w-[95vw] rounded-xl shadow-2xl z-[150] border flex flex-col animate-in fade-in slide-in-from-top-2 duration-150",
             isMinimal
               ? "bg-ivory border-champagne shadow-black/10"
               : "bg-luxury-black border-luxury-border shadow-black/50"
           )}
-          style={{ maxHeight: "320px" }}
         >
           {/* Search Box */}
           <div
             className={cn(
-              "p-2.5 border-b sticky top-0 z-10 flex items-center gap-2",
+              "p-2.5 border-b flex items-center gap-2 shrink-0 rounded-t-xl",
               isMinimal
-                ? "bg-ivory/95 backdrop-blur-sm border-champagne"
-                : "bg-luxury-black/95 backdrop-blur-sm border-luxury-border"
+                ? "bg-ivory border-champagne"
+                : "bg-luxury-black border-luxury-border"
             )}
           >
             <Search
@@ -260,8 +259,8 @@ export default function PhoneInput({
             )}
           </div>
 
-          {/* Country List */}
-          <div className="overflow-y-auto flex-1 p-1 divide-y divide-transparent">
+          {/* Country List — scrollable, explicit height so scrolling works */}
+          <div className="overflow-y-auto p-1" style={{ maxHeight: "260px" }}>
             {filteredCountries.length === 0 ? (
               <div
                 className={cn(
