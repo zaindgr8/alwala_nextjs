@@ -259,8 +259,13 @@ export default function PhoneInput({
             )}
           </div>
 
-          {/* Country List — scrollable, explicit height so scrolling works */}
-          <div className="overflow-y-auto p-1" style={{ maxHeight: "260px" }}>
+          {/* Country List — scrollable, stops scroll from bubbling to modal */}
+          <div
+            className="overflow-y-auto p-1"
+            style={{ maxHeight: "260px", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" as any }}
+            onWheel={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+          >
             {filteredCountries.length === 0 ? (
               <div
                 className={cn(
